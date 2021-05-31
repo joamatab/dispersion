@@ -29,6 +29,10 @@ from dispersion import Constant, Interpolation, \
 #from dispersion.spectral_data import _numeric_to_string_table
 from dispersion.io import (Reader, _numeric_to_string_table,
                            _str_table_to_numeric)
+from dispersion.spectral_data import Drude
+from dispersion.spectrum import Spectrum
+from numpy import complex128
+from typing import Any, Dict, List, Optional, Set, Type, Union
 
 
 
@@ -92,7 +96,7 @@ class Material():
 
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         #parsing arguments
         parsed_args = self._parse_args(kwargs)
         #set inputs and defaults
@@ -134,7 +138,7 @@ class Material():
 
         self._complete_partial_data()
 
-    def _parse_args(self, args):
+    def _parse_args(self, args: Dict[str, Union[str, Dict[str, Union[str, List[float]]], float]]) -> Dict[str, Optional[Union[int, str, float, Dict[str, Union[str, List[float]]]]]]:
         """
         validated the dictionary of class inputs
         """
@@ -200,7 +204,7 @@ class Material():
         return inputs
 
     @staticmethod
-    def _check_type(args, names, types):
+    def _check_type(args: Dict[str, Optional[Union[int, str, float, Dict[str, Union[str, List[float]]]]]], names: Set[str], types: Any) -> None:
         """
         raises TypeError if the names keys in args dict are not in the
         set of types. If name is not in args, place a default value of None.
@@ -219,7 +223,7 @@ class Material():
                 args[arg] = None
 
 
-    def _complete_partial_data(self):
+    def _complete_partial_data(self) -> None:
         """
         if only partial data was provided then set remaining parameters
         to constant value of 0.
@@ -277,7 +281,7 @@ class Material():
                                       "for materials with real and imaginary "+
                                       "parts not independent from each other")
 
-    def _process_fixed_value(self, inputs):
+    def _process_fixed_value(self, inputs: Dict[str, Optional[Union[float, str, int]]]) -> None:
         '''use fixed value inputs to set n/k or permittivity
 
         the fixed value is converted to a SpectralData.Constant object and
@@ -307,7 +311,7 @@ class Material():
         else:
             raise RuntimeError("Failed to set a constant value for n,k or eps")
 
-    def _process_model_dict(self, model_dict):
+    def _process_model_dict(self, model_dict: Dict[str, Union[str, List[float]]]) -> None:
         """use model parameter input to set n/k or permittivity
 
         use model_dict to return a SpectralData.Model object and sets the
@@ -370,7 +374,7 @@ class Material():
             raise ValueError("model output <{}> invalid".format(model.output))
 
     @staticmethod
-    def _str_to_class(field):
+    def _str_to_class(field: str) -> Type[Drude]:
         """evaluates string as a class.
 
         tries to evaluate the given string as a class from the spectral_data
@@ -535,9 +539,9 @@ class Material():
         self._process_model_dict(model_dict)
 
 
-    def get_nk_data(self, spectrum,
-                    spectrum_type='wavelength',
-                    unit='meter'):
+    def get_nk_data(self, spectrum: Spectrum,
+                    spectrum_type: str='wavelength',
+                    unit: str='meter') -> Union[complex, complex128]:
         '''
         return complex refractive index for a given input spectrum.
 

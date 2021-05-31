@@ -4,6 +4,8 @@ import os
 from warnings import warn
 from dispersion.io import (read_yaml_file, read_yaml_string,
                                           write_yaml_file)
+from typing import Dict, Type, Union
+
 if os.name == 'nt':
     PLATFORM = "Windows"
 elif os.name == 'posix':
@@ -13,7 +15,7 @@ else:
                   " Configuration file location unknown.")
 
 
-def validate_config(config):
+def validate_config(config: Dict[str, Union[str, bool, Dict[str, bool], Dict[str, Union[float, str]]]]) -> None:
     """
     validates the data types of the configuration
 
@@ -35,7 +37,7 @@ def validate_config(config):
     check_type(ref_spec['SpectrumType'],str)
     check_type(ref_spec['Unit'],str)
 
-def check_type(value, val_type):
+def check_type(value: Union[bool, str, float], val_type: Union[Type[bool], Type[str], Type[float]]) -> None:
     """
     checks if value isinstance of val_type, if not raise exception
     """

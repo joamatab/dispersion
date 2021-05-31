@@ -32,8 +32,11 @@ import sys
 import codecs
 import warnings
 import re
+import pathlib
 from collections import OrderedDict
 import numpy as np
+from typing import Dict, List, Union
+
 USE_RUAMEL = True
 try:
     from ruamel.yaml import YAML
@@ -119,7 +122,7 @@ def fix_table(tabulated_data):
             last_valid = tabulated_data[row, 0]
     return np.array(new_rows).reshape(-1, n_cols)
 
-def read_yaml_file(file_path):
+def read_yaml_file(file_path: str):
     """opens yaml file and returns contents as a dict like.
 
     Parameters
@@ -137,6 +140,8 @@ def read_yaml_file(file_path):
     If USE_RUAMEL is true an OrderedDict is returned, otherwise a dict is
     returned.
     """
+    file_path = pathlib.Path(file_path)
+
     with open(file_path, 'r', encoding="utf-8") as fpt:
         if USE_RUAMEL:
             yaml_obj = YAML()
@@ -256,13 +261,13 @@ class Reader():
                               'SpectrumType', 'Unit',
                               'Yields'}
 
-    def __init__(self, file_path):
+    def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         fname, extension = os.path.splitext(file_path)
         self.extension = extension
         self.default_file_dict = self._create_default_file_dict()
 
-    def _create_default_file_dict(self):
+    def _create_default_file_dict(self) -> Dict[str, Union[Dict[str, str], List[Dict[str, str]], str]]:
         """default values for the material data."""
         file_dict = {'MetaData': {}}
         for mdk in Reader.FILE_META_DATA_KEYS:
@@ -274,7 +279,7 @@ class Reader():
         return file_dict
 
     @staticmethod
-    def _create_default_data_dict():
+    def _create_default_data_dict() -> Dict[str, str]:
         """default values for a data set."""
         dataset_dict = {}
         for mdk in Reader.DATASET_META_DATA_KEYS:

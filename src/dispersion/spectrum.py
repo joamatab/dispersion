@@ -6,8 +6,10 @@ for specifiying the SI unit of the spectrum (e.g. meter, electronVolt)
 """
 import numpy as np
 import scipy.constants as constants
+from numpy import float64, ndarray
+from typing import List, Tuple, Union
 
-def safe_inverse(values):
+def safe_inverse(values: Union[float, ndarray]) -> Union[float, ndarray]:
     '''
     returns the inverse of a scalar or array while
     converting values of 0 to inf and values of inf to 0
@@ -18,7 +20,7 @@ def safe_inverse(values):
         inverse = safe_inverse_scalar(values)
     return inverse
 
-def safe_inverse_array(values):
+def safe_inverse_array(values: ndarray) -> ndarray:
     '''
     takes the inverse of an array while converting values of 0 to inf
     and values of inf to 0
@@ -32,7 +34,7 @@ def safe_inverse_array(values):
     inverse[safe_inv_ind] = 1.0/values[safe_inv_ind]
     return inverse
 
-def safe_inverse_scalar(value):
+def safe_inverse_scalar(value: float) -> float:
     '''
     takes the inverse of a scalar while converting values of 0 to inf
     and values of inf to 0
@@ -44,7 +46,7 @@ def safe_inverse_scalar(value):
     else:
         return 1.0/value
 
-def frequency_to_standard(unit, values):
+def frequency_to_standard(unit: str, values: ndarray) -> ndarray:
     """converts frequency values to standardised representation"""
     if not unit == 'hz':
         raise NotImplementedError("support for frequency units other " +
@@ -54,7 +56,7 @@ def frequency_to_standard(unit, values):
     return converted_values
 
 
-def energy_to_standard(unit, values):
+def energy_to_standard(unit: str, values: Union[float, ndarray]) -> Union[float, ndarray]:
     """converts energy values to standardised representation"""
     if not unit == 'ev':
         raise NotImplementedError("support for energy units other " +
@@ -64,7 +66,7 @@ def energy_to_standard(unit, values):
     return converted_values
 
 
-def ang_freq_to_standard(unit, values):
+def ang_freq_to_standard(unit: str, values: ndarray) -> ndarray:
     """converts angular frequency values to standardised representation"""
     if not unit == '1/s':
         raise NotImplementedError("support for angular frequency " +
@@ -75,7 +77,7 @@ def ang_freq_to_standard(unit, values):
     return converted_values
 
 
-def wavenumber_to_standard(unit, values):
+def wavenumber_to_standard(unit: str, values: ndarray) -> ndarray:
     """converts wavenumber values to standardised representation"""
     if not unit == '1/cm':
         raise NotImplementedError("support for wavenumber units " +
@@ -85,7 +87,7 @@ def wavenumber_to_standard(unit, values):
     return converted_values
 
 
-def wavelength_to_standard(unit, values):
+def wavelength_to_standard(unit: str, values: Union[float, ndarray]) -> Union[float, ndarray]:
     """converts wavelength values to standardised representation"""
     if unit == 'nm':
         converted_values = values*1e-9
@@ -95,7 +97,7 @@ def wavelength_to_standard(unit, values):
         converted_values = values
     return converted_values
 
-def to_wavelength(unit, values):
+def to_wavelength(unit: str, values: Union[float, ndarray]) -> Union[float64, float, ndarray]:
     """converts values from standard to wavelength representation"""
     if unit == 'm':
         converted_values = values
@@ -105,7 +107,7 @@ def to_wavelength(unit, values):
         converted_values = np.round(values*1e6, decimals=9)
     return converted_values
 
-def to_frequency(unit, values):
+def to_frequency(unit: str, values: ndarray) -> ndarray:
     """converts values from standard to frequency representation"""
     if not unit == 'hz':
         raise NotImplementedError("support for frequency units " +
@@ -113,7 +115,7 @@ def to_frequency(unit, values):
     inverse = safe_inverse(values)
     return constants.c * inverse
 
-def to_energy(unit, values):
+def to_energy(unit: str, values: Union[float, ndarray]) -> Union[float64, ndarray]:
     """converts values from standard to energy representation"""
     if not unit == 'ev':
         raise NotImplementedError("support for energy units " +
@@ -121,7 +123,7 @@ def to_energy(unit, values):
     inverse = safe_inverse(values)
     return np.round((constants.h*constants.c/(constants.e))*inverse, decimals=9)
 
-def to_ang_freq(unit, values):
+def to_ang_freq(unit: str, values: ndarray) -> ndarray:
     """converts values from standard to angular frequency representation"""
     if not unit == '1/s':
         raise NotImplementedError("support for angular frequency units " +
@@ -129,7 +131,7 @@ def to_ang_freq(unit, values):
     inverse = safe_inverse(values)
     return 2*np.pi*constants.c*inverse
 
-def to_wavenumber(unit, values):
+def to_wavenumber(unit: str, values: ndarray) -> ndarray:
     """converts values from standard to wavenumber representation"""
     if not unit == '1/cm':
         raise NotImplementedError("support for wavenumber units" +
@@ -165,7 +167,7 @@ class Spectrum(object):
                      '1/s': '1/s',
                      '1/cm': '1/cm'}
 
-    def __init__(self, values, spectrum_type='wavelength', unit='m'):
+    def __init__(self, values: Union[float, Tuple[float64, float64], Tuple[int, float], List[float], List[int]], spectrum_type: str='wavelength', unit: str='m') -> None:
         self.spectrum_type = spectrum_type.lower()
         if self.spectrum_type not in Spectrum.SPECTRUM_TYPES:
             spectral_types = list(Spectrum.SPECTRUM_TYPES.keys())
@@ -184,7 +186,7 @@ class Spectrum(object):
         self.standardise_values(values)
 
     @staticmethod
-    def standardise_unit(spectrum_type, unit):
+    def standardise_unit(spectrum_type: str, unit: str) -> str:
         """takes a spectrum_type and unit string and returns them in a
         standardised form"""
         valid = False
@@ -207,7 +209,7 @@ class Spectrum(object):
         type_str = self.spectrum_type
         return "{} ({})".format(type_str, unit_str)
 
-    def contains(self, other):
+    def contains(self, other: object) -> bool:
         """detects if the values of another Spectrum object are
         completely contained within the range of the values defined
         in this Spectrum object"""
@@ -256,7 +258,7 @@ class Spectrum(object):
         """gets the SI standard form of a unit string for printing"""
         return Spectrum.DISPLAY_NAMES[unit]
 
-    def standardise_values(self, values):
+    def standardise_values(self, values: Union[float, ndarray]) -> None:
         """check if we need to convert the value in order to obtain
         the wavelength/meter representation"""
         if not (self.spectrum_type == 'wavelength' and
@@ -267,7 +269,7 @@ class Spectrum(object):
             self.standard_rep = values
 
     @staticmethod
-    def convert_from(spectrum_type, unit, values):
+    def convert_from(spectrum_type: str, unit: str, values: Union[float, ndarray]) -> Union[float, ndarray]:
         """
         converts units from given type into wavelength/meter representation
         """
@@ -283,7 +285,7 @@ class Spectrum(object):
         converted_values = convert_methods[spectrum_type](unit, values)
         return converted_values
 
-    def convert_to(self, spectrum_type, unit, in_place=False):
+    def convert_to(self, spectrum_type: str, unit: str, in_place: bool=False) -> Union[float64, float, ndarray]:
         """
         converts units from wavelength/meter representation to given type/unit
         """

@@ -52,4 +52,4 @@ def test_from_model():
     assert np.isclose(np.imag(n), 3.2997524521729824)
 
 if __name__ == "__main__":
-    pass
+    test_from_model()

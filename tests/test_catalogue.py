@@ -6,9 +6,8 @@ from dispersion import get_config
 
 spectrum = Spectrum(0.5, unit='um')
 
-root_path = "../data"
 config = get_config()
-config['Path'] = root_path
+# config['Path'] = root_path
 
 def test_mdb_init():
     mdb = Catalogue(config=config)
@@ -21,4 +20,4 @@ def test_get_mat():
     assert np.isclose(np.imag(nk), 3.1308839999999996)
 
 if __name__ == "__main__":
-    pass
+    test_get_mat()
