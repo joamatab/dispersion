@@ -104,9 +104,11 @@ class Constant(SpectralData):
         """
         return a dictionary representation of the object
         """
-        data = {}
-        data['DataType'] = "constant"
-        data['ValidRange'] = _numeric_to_string_table(self.valid_range.values)
+        data = {
+            'DataType': "constant",
+            'ValidRange': _numeric_to_string_table(self.valid_range.values),
+        }
+
         data['SpectrumType'] = self.spectrum_type
         data['Unit'] = self.unit
         data['Value'] = self.constant
@@ -147,8 +149,13 @@ class Extrapolation(SpectralData):
             # extrapolation both upper and lower
             extrap_values = extended_spectrum.values
             if extrap_values.size > 2:
-                raise ValueError("extrapolation spectrum may contain at most" +
-                                 "2 values not {}".format(extrap_values.size))
+                raise ValueError(
+                    (
+                        "extrapolation spectrum may contain at most"
+                        + f"2 values not {extrap_values.size}"
+                    )
+                )
+
             for extrap_val in extrap_values:
                 new_range = self.validate_extrap_val(extrap_val, new_range)
         else:
@@ -170,11 +177,19 @@ class Extrapolation(SpectralData):
         elif extrap_val > base_range[1]:
             base_range[1] = extrap_val
         else:
-            raise ValueError("extrapolation value of " +
-                             "{} ".format(extrap_val) +
-                             "lies inside the defined range " +
-                             "{}".format(base_range) +
-                             " therefore extrapolation is not necessary")
+            raise ValueError(
+                (
+                    (
+                        (
+                            ("extrapolation value of " + f"{extrap_val} ")
+                            + "lies inside the defined range "
+                        )
+                        + f"{base_range}"
+                    )
+                    + " therefore extrapolation is not necessary"
+                )
+            )
+
         return base_range
 
 
@@ -226,9 +241,11 @@ class Interpolation(SpectralData):
         """
         return a dictionary representation of the object
         """
-        data = {}
-        data['DataType'] = "tabulated"
-        data['ValidRange'] = _numeric_to_string_table(self.valid_range.values)
+        data = {
+            'DataType': "tabulated",
+            'ValidRange': _numeric_to_string_table(self.valid_range.values),
+        }
+
         data['SpectrumType'] = self.spectrum_type
         data['Unit'] = self.unit
         data['Data'] = _numeric_to_string_table(self.data)
@@ -252,23 +269,32 @@ class Model(SpectralData):
                                 spectrum_type=self.spectrum_type,
                                 unit=self.unit)
 
-        if not tmp_spectrum.spectrum_type == self.required_spectrum_type:
-            raise ValueError("spectrum_type for model " +
-                             "<{}> must".format(type(self).__name__) +
-                             " be {}".format(self.required_spectrum_type))
+        if tmp_spectrum.spectrum_type != self.required_spectrum_type:
+            raise ValueError(
+                (
+                    ("spectrum_type for model " + f"<{type(self).__name__}> must")
+                    + f" be {self.required_spectrum_type}"
+                )
+            )
 
-        if not tmp_spectrum.unit == self.required_unit:
-            raise ValueError("unit for model " +
-                             "<{}> must".format(type(self).__name__) +
-                             "be {}".format(self.required_unit))
+
+        if tmp_spectrum.unit != self.required_unit:
+            raise ValueError(
+                (
+                    ("unit for model " + f"<{type(self).__name__}> must")
+                    + f"be {self.required_unit}"
+                )
+            )
 
     def dict_repr(self):
         """
         return a dictionary representation of the object
         """
-        data = {}
-        data['DataType'] = "model " + type(self).__name__
-        data['ValidRange'] = _numeric_to_string_table(self.valid_range.values)
+        data = {
+            'DataType': f"model {type(self).__name__}",
+            'ValidRange': _numeric_to_string_table(self.valid_range.values),
+        }
+
         data['SpectrumType'] = self.spectrum_type
         data['Unit'] = self.unit
         data['Yields'] = self.output
@@ -326,8 +352,7 @@ class Sellmeier(Model):
             cupper = self.model_parameters[iterc*2+1]
             clower = self.model_parameters[iterc*2+2]
             rhs += cupper*wvlsq/(wvlsq-clower**2)
-        ref_index = np.sqrt(rhs+1.0)
-        return ref_index
+        return np.sqrt(rhs+1.0)
 
 class Sellmeier2(Model):
 
@@ -354,8 +379,7 @@ class Sellmeier2(Model):
             cupper = self.model_parameters[iterc*2+1]
             clower = self.model_parameters[iterc*2+2]
             rhs += cupper*wvlsq/(wvlsq-clower)
-        ref_index = np.sqrt(rhs+1.0)
-        return ref_index
+        return np.sqrt(rhs+1.0)
 
 class Polynomial(Model):
 
@@ -382,8 +406,7 @@ class Polynomial(Model):
             c_multi = self.model_parameters[iterc*2+1]
             c_power = self.model_parameters[iterc*2+2]
             rhs += c_multi*np.power(wavelengths, c_power)
-        ref_index = np.sqrt(rhs)
-        return ref_index
+        return np.sqrt(rhs)
 
 class RefractiveIndexInfo(Model):
 
@@ -417,8 +440,7 @@ class RefractiveIndexInfo(Model):
             c_multi = self.model_parameters[iterc*2+9]
             c_power = self.model_parameters[iterc*2+10]
             rhs += c_multi*np.power(wavelengths, c_power)
-        ref_index = np.sqrt(rhs)
-        return ref_index
+        return np.sqrt(rhs)
 
 
 
@@ -446,8 +468,7 @@ class Cauchy(Model):
             c_multi = self.model_parameters[iterc*2+1]
             c_power = self.model_parameters[iterc*2+2]
             rhs += c_multi*np.power(wavelengths, c_power)
-        ref_index = rhs
-        return ref_index
+        return rhs
 
 class Gases(Model):
 
@@ -474,8 +495,7 @@ class Gases(Model):
             cupper = self.model_parameters[iterc*2+1]
             clower = self.model_parameters[iterc*2+2]
             rhs += cupper/(clower-wvlinvsq)
-        ref_index = rhs+1.0
-        return ref_index
+        return rhs+1.0
 
 class Herzberger(Model):
 
@@ -504,8 +524,7 @@ class Herzberger(Model):
         rhs += self.model_parameters[4]*np.power(wavelengths, 4)
         rhs += self.model_parameters[5]*np.power(wavelengths, 6)
 
-        ref_index = rhs
-        return ref_index
+        return rhs
 
 class Retro(Model):
 
@@ -534,8 +553,7 @@ class Retro(Model):
         tmp_p = -2*rhs/(1-rhs)
         tmp_q = -1/(1-rhs)
 
-        ref_index = -0.5*tmp_p + np.sqrt(np.power(0.5*tmp_p, 2) - tmp_q)
-        return ref_index
+        return -0.5*tmp_p + np.sqrt(np.power(0.5*tmp_p, 2) - tmp_q)
 
 class Exotic(Model):
 
@@ -563,8 +581,7 @@ class Exotic(Model):
         rhs += (self.model_parameters[3]*(wavelengths -self.model_parameters[4])/
                 (np.power(wavelengths - self.model_parameters[4], 2) +
                  self.model_parameters[5]))
-        ref_index = np.sqrt(rhs)
-        return ref_index
+        return np.sqrt(rhs)
 
 class Drude(Model):
 
@@ -639,8 +656,7 @@ class TaucLorentz(Model):
         eps_inf = self.model_parameters[4] # high frequency limit of the real part of permittivity
         eps_imag = self._calc_eps_imag(ones, energies, A, E0, C, Eg)
         eps_real = self._calc_eps_real(energies, A, E0, C, Eg, eps_inf)
-        eps = eps_real + 1j*eps_imag
-        return eps
+        return eps_real + 1j*eps_imag
 
     def _calc_eps_imag(self, ones, energies, A, E0, C, Eg):
         eps_imag = ones
@@ -686,8 +702,7 @@ class TaucLorentz(Model):
                  np.log( (np.abs(E-Eg)*(E+Eg))/
                          np.sqrt((E0**2-Eg**2)**2+Eg**2*C**2)))
 
-        eps_real = eps_inf + part1 + part2 + part3 + part4 +part5
-        return eps_real
+        return eps_inf + part1 + part2 + part3 + part4 +part5
 
 
 
@@ -713,5 +728,4 @@ class Fano(Model):
         epsilon =  2*(energies-e_r)/gamma
         #loss = self.model_parameters[1] # loss in eV
         norm = (1+q**2)
-        sigma = (1/norm) *(epsilon+q)**2 / (epsilon**2+1)
-        return sigma
+        return (1/norm) *(epsilon+q)**2 / (epsilon**2+1)

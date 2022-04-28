@@ -42,10 +42,8 @@ def _check_table_shape(table, ncols, name):
     """
     check that numpy array shape has the correct number of columns
     """
-    if (not len(table.shape) == 2 or
-        not table.shape[1] == ncols):
-        raise ValueError("tabulated {} data ".format(name) +
-                         "must have shape Nx{}".format(ncols))
+    if len(table.shape) != 2 or table.shape[1] != ncols:
+        raise ValueError((f"tabulated {name} data " + f"must have shape Nx{ncols}"))
 
 class Material():
     '''
@@ -98,15 +96,17 @@ class Material():
         #set inputs and defaults
         file_path = parsed_args["file_path"]
         #self.meta_data = None
-        self.meta_data = {}
-        self.meta_data['Reference'] = ""
-        self.meta_data['Comment'] = ""
-        self.meta_data['Name'] = ""
-        self.meta_data['FullName'] = ""
-        self.meta_data['Author'] = ""
-        self.meta_data['Alias'] = ""
-        self.meta_data['MetaComment'] = ""
-        self.meta_data['Specification'] = {}
+        self.meta_data = {
+            'Reference': "",
+            'Comment': "",
+            'Name': "",
+            'FullName': "",
+            'Author': "",
+            'Alias': "",
+            'MetaComment': "",
+            'Specification': {},
+        }
+
         self._file_data = None
         self.data = {'name': "",
                      'real': None,
@@ -146,19 +146,28 @@ class Material():
         inputs = {}
         n_mutually_exclusive = 0
         for arg in args.keys():
-            if arg in args and args[arg] is not None:
-                if arg in mutually_exclusive:
-                    n_mutually_exclusive += 1
+            if arg in args and args[arg] is not None and arg in mutually_exclusive:
+                n_mutually_exclusive += 1
             inputs[arg] = args[arg]
 
         if n_mutually_exclusive == 0:
-            raise ValueError("At least one of the following" +
-                             " inputs is required: "+
-                             "{}".format(mutually_exclusive))
+            raise ValueError(
+                (
+                    "At least one of the following"
+                    + " inputs is required: "
+                    + f"{mutually_exclusive}"
+                )
+            )
+
         elif n_mutually_exclusive > 1:
-            raise ValueError("Only one of the following" +
-                             "inputs is allowed: "+
-                             "{}".format(mutually_exclusive))
+            raise ValueError(
+                (
+                    "Only one of the following"
+                    + "inputs is allowed: "
+                    + f"{mutually_exclusive}"
+                )
+            )
+
         # Check types
         str_args = {'file_path', 'spectrum_type', 'unit'}
         str_types = {str}
@@ -207,14 +216,9 @@ class Material():
         """
         for arg in names:
             if arg in args and args[arg] is not None:
-                invalid_type = False
-                for _type in types:
-                    if isinstance(args[arg], _type):
-                        invalid_type = True
-                if invalid_type is False:
-                    raise TypeError("argument " +
-                                    "{} must be".format(arg) +
-                                    " of types: {}".format(types))
+                invalid_type = any(isinstance(args[arg], _type) for _type in types)
+                if not invalid_type:
+                    raise TypeError((("argument " + f"{arg} must be") + f" of types: {types}"))
             else:
                 args[arg] = None
 
@@ -265,17 +269,16 @@ class Material():
 
         """
 
-        if self.data['complex'] is None:
-            for data_name in ['real', 'imag']:
-                if isinstance(self.data[data_name], Constant):
-                    continue
-                self.data[data_name] = Extrapolation(self.data[data_name],
-                                                     new_spectrum,
-                                                     spline_order=spline_order)
-        else:
+        if self.data['complex'] is not None:
             raise NotImplementedError("extrapolation not implemented " +
                                       "for materials with real and imaginary "+
                                       "parts not independent from each other")
+        for data_name in ['real', 'imag']:
+            if isinstance(self.data[data_name], Constant):
+                continue
+            self.data[data_name] = Extrapolation(self.data[data_name],
+                                                 new_spectrum,
+                                                 spline_order=spline_order)
 
     def _process_fixed_value(self, inputs):
         '''use fixed value inputs to set n/k or permittivity
@@ -367,7 +370,7 @@ class Material():
             self.data['name'] = 'eps'
             self.data['complex'] = model
         else:
-            raise ValueError("model output <{}> invalid".format(model.output))
+            raise ValueError(f"model output <{model.output}> invalid")
 
     @staticmethod
     def _str_to_class(field):
@@ -394,7 +397,7 @@ class Material():
             raise NameError("%s doesn't exist." % field)
         if isinstance(identifier, type):
             return identifier
-        raise TypeError("%s is not a class." % field)
+        raise TypeError(f"{field} is not a class.")
 
     def _process_file_data(self, file_dict):
         """set meta_data and data from dictionary"""
@@ -422,7 +425,7 @@ class Material():
                 #data is a formula with coefficients
                 self._process_formula_data(dataset)
             else:
-                raise ValueError("data type {} not supported".format(data_type))
+                raise ValueError(f"data type {data_type} not supported")
 
     def _process_table(self, table, identifier, meta_data=None):
         """
@@ -489,12 +492,10 @@ class Material():
         create model_dict and call process_model_dict use range and coefficients
         in input dictionary to return a SpectralData.Model
         '''
-        model_dict = {}
         meta_data = data_dict
         data_type, identifier = meta_data['DataType'].split()
-        if not (data_type in {'formula', 'model'}):
-            raise ValueError("dataType <{}>".format(data_type) +
-                             " not a valid formula or model")
+        if data_type not in {'formula', 'model'}:
+            raise ValueError((f"dataType <{data_type}>" + " not a valid formula or model"))
         if data_type == 'formula':
             identifier = int(identifier)
 
@@ -503,24 +504,18 @@ class Material():
 
         for i_valid_range, v_range in enumerate(valid_range):
             valid_range[i_valid_range] = float(v_range)
-        model_dict['valid_range'] = valid_range
-
+        model_dict = {'valid_range': valid_range}
         coefficients = data_dict['Data'].split()
         for iter_coeff, coeff in enumerate(coefficients):
             coefficients[iter_coeff] = float(coeff)
         model_dict['parameters'] = np.array(coefficients)
 
 
-        if meta_data['SpectrumType']:
-            model_dict['spectrum_type'] = meta_data['SpectrumType']
-        else:
-            model_dict['spectrum_type'] = self.defaults['spectrum_type']
+        model_dict['spectrum_type'] = (
+            meta_data['SpectrumType'] or self.defaults['spectrum_type']
+        )
 
-        if meta_data['Unit']:
-            model_dict['unit'] = meta_data['Unit']
-        else:
-            model_dict['unit'] = self.defaults['unit']
-
+        model_dict['unit'] = meta_data['Unit'] or self.defaults['unit']
         method_ids = {1: 'Sellmeier', 2: 'Sellmeier2',
                       3: 'Polynomial', 4: 'RefractiveIndexInfo',
                       5: 'Cauchy', 6: 'Gases',
@@ -568,9 +563,14 @@ class Material():
                             spectrum_type=spectrum_type,
                             unit=unit)
 
-        if not (self.data['name'] == 'nk' or self.data['name'] == 'eps'):
-            raise ValueError("data type {}".format(self.data['name']) +
-                             "cannot be converted to refractive index")
+        if self.data['name'] not in ['nk', 'eps']:
+            raise ValueError(
+                (
+                    f"data type {self.data['name']}"
+                    + "cannot be converted to refractive index"
+                )
+            )
+
 
         if self.data['complex'] is None:
             real = self.data['real'].evaluate(spectrum)
@@ -613,9 +613,14 @@ class Material():
                                 spectrum_type=spectrum_type,
                                 unit=unit)
 
-        if not (self.data['name'] == 'nk' or self.data['name'] == 'eps'):
-            raise ValueError("data type {}".format(self.data['name']) +
-                             "cannot be converted to refractive index")
+        if self.data['name'] not in ['nk', 'eps']:
+            raise ValueError(
+                (
+                    f"data type {self.data['name']}"
+                    + "cannot be converted to refractive index"
+                )
+            )
+
 
         if self.data['complex'] is None:
             real = self.data['real'].evaluate(spectrum)
@@ -639,7 +644,7 @@ class Material():
         2x1 np.array
             the maximum valid range
         """
-        if not(self.data['name'] == 'nk' or self.data['name'] == 'eps'):
+        if self.data['name'] not in ['nk', 'eps']:
             raise RuntimeError("valid_range cannot be defined as "+
                                "Material does not yet contain "+
                                " a valid n/k or permittivity spectrum")
@@ -665,8 +670,7 @@ class Material():
     def utf8_to_ascii(string):
         """converts a string from utf8 to ascii"""
         uni_str = codecs.encode(string, 'utf-8')
-        ascii_str = codecs.decode(uni_str, 'ascii', 'ignore')
-        return ascii_str
+        return codecs.decode(uni_str, 'ascii', 'ignore')
 
     def print_reference(self):
         """print material reference"""
@@ -694,10 +698,7 @@ class Material():
                                       " package to be installed")
 
         plot_data = self._prepare_plot_data(**kwargs)
-        if 'axes' not in kwargs:
-            plot_data['axes'] = plt.axes()
-        else:
-            plot_data['axes'] = kwargs['axes']
+        plot_data['axes'] = plt.axes() if 'axes' not in kwargs else kwargs['axes']
         if data_label == 'nk':
             data = self.get_nk_data(plot_data['spectrum'])
             labels = ['n', 'k']
@@ -720,21 +721,21 @@ class Material():
             plt.plot(spectrum.values, data_r, label=labels[0])
             plt.plot(spectrum.values, data_i, ls='--', label=labels[1])
         plt.legend(loc='best')
-        plt.ylabel("{}, {}".format(labels[0], labels[1]))
+        plt.ylabel(f"{labels[0]}, {labels[1]}")
         xlabel = spectrum.get_type_unit_string()
         plt.xlabel(xlabel)
 
     def _prepare_plot_data(self, **kwargs):
         """internal function to prepare data for plotting"""
-        plot_data = {}
-        if 'spectrum_type' not in kwargs:
-            plot_data['spectrum_type'] = self.defaults['spectrum_type']
-        else:
-            plot_data['spectrum_type'] = kwargs['spectrum_type']
-        if 'unit' not in kwargs:
-            plot_data['unit'] = self.defaults['unit']
-        else:
-            plot_data['unit'] = kwargs['unit']
+        plot_data = {
+            'spectrum_type': self.defaults['spectrum_type']
+            if 'spectrum_type' not in kwargs
+            else kwargs['spectrum_type'],
+            'unit': self.defaults['unit']
+            if 'unit' not in kwargs
+            else kwargs['unit'],
+        }
+
         if 'values' not in kwargs:
             spectrum = self.get_sample_spectrum()
             values = spectrum.convert_to(plot_data['spectrum_type'],
@@ -756,24 +757,24 @@ class Material():
         max_range = self.get_maximum_valid_range()
         if max_range[0] == 0.0 or max_range[1] == np.inf:
             values = np.geomspace(100, 2000, 1000)
-            spectrum = Spectrum(values, spectrum_type='wavelength',
-                                unit='nm')
+            return Spectrum(values, spectrum_type='wavelength', unit='nm')
+
         else:
             values = np.geomspace(max_range[0], max_range[1], 1000)
             if values[0] < max_range[0]:
                 values[0] = max_range[0]
             if values[-1] > max_range[1]:
                 values[-1] = max_range[1]
-            spectrum = Spectrum(values,
-                                spectrum_type=self.defaults['spectrum_type'],
-                                unit=self.defaults['unit'])
-        return spectrum
+            return Spectrum(
+                values,
+                spectrum_type=self.defaults['spectrum_type'],
+                unit=self.defaults['unit'],
+            )
 
     def prepare_file_dict(self):
         #if self._file_data is not None:
         #    return self._file_data
-        file_dict = {}
-        file_dict['MetaData'] = {}
+        file_dict = {'MetaData': {}}
         #file_dict[]
         for key in self.meta_data:
             if key == "Alias":
@@ -818,12 +819,7 @@ class Material():
             a list of dicts that has a format suitable for writing to file
         """
         datasets = []
-        if self.data['complex'] is None:
-            data_parts = ['real', 'imag']
-        else:
-            data_parts = 'complex'
-
-
+        data_parts = ['real', 'imag'] if self.data['complex'] is None else 'complex'
         for data_part in data_parts:
             spec_data = self.data[data_part]
             data_dict = spec_data.dict_repr()
@@ -862,10 +858,12 @@ class Material():
         if not collapse:
             return datasets
 
-        new_dataset = {}
-        new_dataset['Unit'] = datasets[0]['Unit']
-        new_dataset['SpectrumType'] = datasets[0]['SpectrumType']
-        new_dataset['DataType'] = 'tabulated nk'
+        new_dataset = {
+            'Unit': datasets[0]['Unit'],
+            'SpectrumType': datasets[0]['SpectrumType'],
+            'DataType': 'tabulated nk',
+        }
+
         k_data = k_data[:, 1].reshape(k_data.shape[0], 1)
         new_data = np.concatenate([n_data, k_data], axis=1)
         new_dataset['Data'] = _numeric_to_string_table(new_data)
@@ -953,5 +951,4 @@ class Bruggeman(EffectiveMedium):
 
 
 
-if __name__ == "__main__":
-    pass
+pass

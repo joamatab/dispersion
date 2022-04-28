@@ -23,8 +23,13 @@ def validate_config(config):
     """
     check_type(config['Path'],str)
     if not os.path.isdir(config['Path']):
-        raise IOError("directory path for database file system is invalid:" +
-                      " <{}>".format(config['Path']))
+        raise IOError(
+            (
+                "directory path for database file system is invalid:"
+                + f" <{config['Path']}>"
+            )
+        )
+
     check_type(config['Interactive'],bool)
     assert "Modules" in config
     for value in config['Modules'].values():
@@ -40,9 +45,12 @@ def check_type(value, val_type):
     checks if value isinstance of val_type, if not raise exception
     """
     if not isinstance(value,val_type):
-        raise ValueError("config file data {}".format(value) +
-                         "must be of type {}".format(val_type) +
-                         ", not {}".format(type(value)))
+        raise ValueError(
+            (
+                (f"config file data {value}" + f"must be of type {val_type}")
+                + f", not {type(value)}"
+            )
+        )
 
 
 def default_config():
@@ -65,8 +73,7 @@ def default_config():
       SpectrumType: wavelength
       Unit: nanometer
     """.format(_get_user_config_dir())
-    config = read_yaml_string(yaml_str)
-    return config
+    return read_yaml_string(yaml_str)
 
 def _get_user_config_dir():
     if PLATFORM == 'Windows':
@@ -81,8 +88,7 @@ def _get_user_config_dir():
     return config_dir
 
 def _get_package_dir():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    return dir_path
+    return os.path.dirname(os.path.realpath(__file__))
 
 def _get_config_dir():
     user_dir = _get_user_config_dir()
@@ -121,8 +127,7 @@ def read_config():
     """
     dir_path = _get_config_dir()
     file_path = os.path.join(dir_path, 'config.yaml')
-    config = read_yaml_file(file_path)
-    return config
+    return read_yaml_file(file_path)
 
 def get_config():
     """get the configuration data.

@@ -20,5 +20,4 @@ def test_get_mat():
     assert np.isclose(np.real(nk), 0.05)
     assert np.isclose(np.imag(nk), 3.1308839999999996)
 
-if __name__ == "__main__":
-    pass
+pass

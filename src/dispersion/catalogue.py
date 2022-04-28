@@ -136,31 +136,31 @@ class Catalogue(object):
         df_new = pd.DataFrame(columns=Catalogue.META_DATA.keys())
         for module, valid in config_modules.items():
             if valid:
-                print("Building {}".format(module))
+                print(f"Building {module}")
                 if module in rebuild or rebuild == 'All':
                     db_path = module
                     dir_path = os.path.join(self.base_path, db_path)
                     read_function = all_modules[module]
                     dframe = read_function(dir_path)
-                    if PANDAS_MINOR_VERSION > 22:
-                        df_new = df_new.append(dframe, sort=False,
-                                               ignore_index=True)
-                    else:
-                        df_new = df_new.append(dframe, ignore_index=True)
                 else:
                     dframe = df[df.Database == module]
-                    if PANDAS_MINOR_VERSION > 22:
-                        df_new = df_new.append(dframe, sort=False,
-                                               ignore_index=True)
-                    else:
-                        df_new = df_new.append(dframe, ignore_index=True)
+                df_new = (
+                    df_new.append(dframe, sort=False, ignore_index=True)
+                    if PANDAS_MINOR_VERSION > 22
+                    else df_new.append(dframe, ignore_index=True)
+                )
 
-            else:
-                if rebuild == module:
-                    raise ValueError("Tried to rebuild module" +
-                                     "{}".format(rebuild) +
-                                     ", however this module is disabled" +
-                                     " in the configuration.")
+            elif rebuild == module:
+                raise ValueError(
+                    (
+                        (
+                            ("Tried to rebuild module" + f"{rebuild}")
+                            + ", however this module is disabled"
+                        )
+                        + " in the configuration."
+                    )
+                )
+
         return df_new
 
     def view_interactive(self):
@@ -223,14 +223,24 @@ class Catalogue(object):
         elif isinstance(row_id, int):
             index = row_id
         if index is None:
-            raise ValueError("row_id: {}".format(row_id) +
-                             " with type {}".format(type(row_id)) +
-                             " not understood")
-        if alias in self.database.loc[:, 'Alias'].values:
-            if not self.database.at[index, 'Alias'] == alias:
-                raise ValueError("Alias {} ".format(alias) +
-                                 "already in use. Failed to " +
-                                 "add to catalogue.")
+            raise ValueError(
+                (
+                    (f"row_id: {row_id}" + f" with type {type(row_id)}")
+                    + " not understood"
+                )
+            )
+
+        if (
+            alias in self.database.loc[:, 'Alias'].values
+            and self.database.at[index, 'Alias'] != alias
+        ):
+            raise ValueError(
+                (
+                    (f"Alias {alias} " + "already in use. Failed to ")
+                    + "add to catalogue."
+                )
+            )
+
 
         self.database.at[index, 'Alias'] = alias
 
@@ -241,9 +251,16 @@ class Catalogue(object):
             bool_list = bool_array.tolist()
             row_index = self.database.index[bool_list]
             if row_index.size == 0:
-                raise ValueError("identifier {} does not ".format(identifier) +
-                                 "name a valid alias in the " +
-                                 "catalogue")
+                raise ValueError(
+                    (
+                        (
+                            f"identifier {identifier} does not "
+                            + "name a valid alias in the "
+                        )
+                        + "catalogue"
+                    )
+                )
+
             row = self.database.iloc[row_index[0], :]
 
         elif isinstance(identifier, int):
@@ -253,10 +270,9 @@ class Catalogue(object):
         file_path = os.path.normpath(os.path.join(self.base_path,
                                                   row.Module,
                                                   row.Path.replace('\\', '/')))
-        mat = Material(file_path=file_path,
-                           spectrum_type=row.SpectrumType,
-                           unit=row.Unit)
-        return mat
+        return Material(
+            file_path=file_path, spectrum_type=row.SpectrumType, unit=row.Unit
+        )
 
     def make_reference_spectrum(self, config):
         """make the spectrum with which every material in the catalogue will
@@ -329,18 +345,20 @@ class Catalogue(object):
                                        spectrum_type='wavelength',
                                        unit='micrometer')
                 except OSError as exc:
-                    warnings.warn("file {} ".format(full_file) +
-                                  "could not be opened, skipping")
+                    warnings.warn((f"file {full_file} " + "could not be opened, skipping"))
                     continue
                 fullname = self.rii_loader['current_full_name']
-                content_dict = {"Alias":"",
-                                "Name":self.rii_loader['current_book'],
-                                "FullName":fullname,
-                                "Author":page['PAGE'],
-                                "Path":os.path.normpath(rel_path),
-                                "Module":"RefractiveIndexInfo"}
-                content_dict['SpectrumType'] = 'wavelength'
-                content_dict['Unit'] = 'micrometer'
+                content_dict = {
+                    "Alias": "",
+                    "Name": self.rii_loader['current_book'],
+                    "FullName": fullname,
+                    "Author": page['PAGE'],
+                    "Path": os.path.normpath(rel_path),
+                    "Module": "RefractiveIndexInfo",
+                    'SpectrumType': 'wavelength',
+                    'Unit': 'micrometer',
+                }
+
                 valid_range = mat.get_maximum_valid_range()
                 content_dict['SpectrumLowerBound'] = valid_range[0]
                 content_dict['SpectrumUpperBound'] = valid_range[1]
@@ -372,9 +390,9 @@ class Catalogue(object):
 
         dframe = pd.DataFrame(columns=Catalogue.META_DATA.keys())
         database_list = []
+        allowed_ext = {'.txt', '.csv', '.yml'}
         for filename in onlyfiles:
             [name, ext] = os.path.splitext(filename)
-            allowed_ext = {'.txt', '.csv', '.yml'}
             if ext not in allowed_ext:
                 continue
 
@@ -382,16 +400,18 @@ class Catalogue(object):
                                spectrum_type='wavelength',
                                unit='nanometer')
 
-            content_dict = {}
-            content_dict['Alias'] = ""
-            content_dict['Name'] = name
-            content_dict['FullName'] = mat.meta_data['FullName']
-            content_dict['Author'] = mat.meta_data['Author']
-            content_dict['Module'] = database_name
-            content_dict['Comment'] = mat.meta_data['Comment']
-            content_dict['Reference'] = mat.meta_data['Reference']
-            content_dict['SpectrumType'] = "wavelength"
-            content_dict['Unit'] = 'nanometer'
+            content_dict = {
+                'Alias': "",
+                'Name': name,
+                'FullName': mat.meta_data['FullName'],
+                'Author': mat.meta_data['Author'],
+                'Module': database_name,
+                'Comment': mat.meta_data['Comment'],
+                'Reference': mat.meta_data['Reference'],
+                'SpectrumType': "wavelength",
+                'Unit': 'nanometer',
+            }
+
             valid_range = mat.get_maximum_valid_range()
             content_dict['SpectrumLowerBound'] = valid_range[0]
             content_dict['SpectrumUpperBound'] = valid_range[1]

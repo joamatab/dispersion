@@ -53,9 +53,7 @@ def multi_key(dict_obj, key_set):
     for key in key_set:
         if key in dict_obj:
             return dict_obj[key]
-    else:
-        raise KeyError("None of the keys {}".format(key_set) +
-                       " were present")
+    raise KeyError((f"None of the keys {key_set}" + " were present"))
 
 def _numeric_to_string_table(table):
     """
@@ -81,15 +79,12 @@ def _str_table_to_numeric(table):
         for row in table.split('\n'):
             if row.isspace() or row == "":
                 break
-            numeric_col = []
-            for col in row.split():
-                numeric_col.append(float(col))
+            numeric_col = [float(col) for col in row.split()]
             numeric_table.append(numeric_col)
         numeric_table = np.array(numeric_table)
 
     else:
-        raise TypeError("table of type " +
-                        "{} cannot be parsed".format(type(table)))
+        raise TypeError(("table of type " + f"{type(table)} cannot be parsed"))
     if validate_table(numeric_table) is False:
         numeric_table = fix_table(numeric_table)
     return numeric_table
@@ -112,11 +107,10 @@ def fix_table(tabulated_data):
     new_rows = [tabulated_data[0, :]]
     last_valid = tabulated_data[0, 0]
     for row in range(1, tabulated_data.shape[0]):
-        if not tabulated_data[row, 0] > last_valid:
+        if tabulated_data[row, 0] <= last_valid:
             continue
-        else:
-            new_rows.append(tabulated_data[row, :])
-            last_valid = tabulated_data[row, 0]
+        new_rows.append(tabulated_data[row, :])
+        last_valid = tabulated_data[row, 0]
     return np.array(new_rows).reshape(-1, n_cols)
 
 def read_yaml_file(file_path):
@@ -223,7 +217,7 @@ def prepend_text_to_file(file_path, text, extra_line=False):
     with open(file_path, 'w', encoding='utf8') as fpt:
         text = text.rstrip('\n\r')
         text = text.replace("\n", "\n#")
-        text = "#" + text
+        text = f"#{text}"
         text += "\n"
         if extra_line:
             text += "\n"
@@ -276,9 +270,7 @@ class Reader():
     @staticmethod
     def _create_default_data_dict():
         """default values for a data set."""
-        dataset_dict = {}
-        for mdk in Reader.DATASET_META_DATA_KEYS:
-            dataset_dict[mdk] = ""
+        dataset_dict = {mdk: "" for mdk in Reader.DATASET_META_DATA_KEYS}
         dataset_dict['Data'] = []
         return dataset_dict
 
@@ -296,9 +288,12 @@ class Reader():
         elif self.extension == '.yml':
             return self._read_yaml_mat_file()
         else:
-            raise ValueError("extension " +
-                             "{} not supported".format(self.extension) +
-                             ", supported extensions are (.yml|.csv|.txt)")
+            raise ValueError(
+                (
+                    ("extension " + f"{self.extension} not supported")
+                    + ", supported extensions are (.yml|.csv|.txt)"
+                )
+            )
 
     def _read_text_data(self):
         """read data stored in a .txt or .csv file."""
@@ -360,10 +355,7 @@ class Reader():
                 valid = False
                 for key in Reader.FILE_META_DATA_KEYS:
                     if kwd.startswith(key.upper()):
-                        if key == 'Specification':
-                            file_dict['MetaData'][key] = str(arg)
-                        else:
-                            file_dict['MetaData'][key] = arg
+                        file_dict['MetaData'][key] = str(arg) if key == 'Specification' else arg
                         valid = True
                         break
                 if valid is False:
@@ -373,8 +365,7 @@ class Reader():
                             valid = True
                             break
                 if valid is False:
-                    KeyError("keyword " +
-                             "[{}] in comment header invalid".format(kwd))
+                    KeyError(("keyword " + f"[{kwd}] in comment header invalid"))
             else:
                 raise RuntimeError(" string \":\" may only appear" +
                                    "once per line in comment header")
@@ -430,14 +421,14 @@ class Reader():
             elif kwd == 'SPECS':
                 valid = True
                 file_dict['MetaData']['Specification'] = arg
-            if valid is False:
+            if not valid:
                 for key in Reader.FILE_META_DATA_KEYS:
                     if kwd.startswith(key.upper()):
                         file_dict['MetaData'][key] = arg
                         valid = True
                         break
             if valid is False:
-                KeyError("keyword [{}] in file invalid".format(kwd))
+                KeyError(f"keyword [{kwd}] in file invalid")
         return file_dict
 
     def _process_mat_data_dict(self, mat_data):
@@ -458,7 +449,7 @@ class Reader():
                                   'spectra_range', 'wavelength_range'},
                    'DataType':'type'}
         dataset_list = []
-        for n_data_set, dataset in enumerate(mat_data):
+        for dataset in mat_data:
             dataset_list.append(Reader._create_default_data_dict())
             data_dict = dataset_list[-1]
             try:
@@ -478,7 +469,7 @@ class Reader():
                 except KeyError:
                     data_dict['Data'] = dataset['Data']
             else:
-                raise KeyError("data type <{}> invalid".format(data_type))
+                raise KeyError(f"data type <{data_type}> invalid")
 
             for kwd in dataset:
                 valid = False
@@ -487,17 +478,14 @@ class Reader():
                 for key in Reader.DATASET_META_DATA_KEYS:
                     if valid:
                         break
-                    if key in aliases.keys():
-                        all_names = aliases[key]
-                    else:
-                        all_names = {key}
+                    all_names = aliases.get(key, {key})
                     for alias in all_names:
                         if kwd == alias.upper():
                             data_dict[key] = arg
                             valid = True
                             break
                 if valid is False:
-                    KeyError("keyword <{}> in file invalid".format(kwd))
+                    KeyError(f"keyword <{kwd}> in file invalid")
 
         return dataset_list
 
@@ -577,17 +565,20 @@ class Writer():
         txt_types = {'.txt', '.csv'}
         if self.extension in txt_types:
             self._write_text_file()
-            if not meta_comment == "":
+            if meta_comment != "":
                 prepend_text_to_file(self.file_path, meta_comment)
         elif self.extension == '.yml':
             self._write_yaml_file()
-            if not meta_comment == "":
+            if meta_comment != "":
                 prepend_text_to_file(self.file_path, meta_comment,
                                      extra_line=True)
         else:
-            raise ValueError("extension" +
-                             "{} not supported".format(self.extension) +
-                             ", supported extensions are (.yml|.csv|.txt)")
+            raise ValueError(
+                (
+                    ("extension" + f"{self.extension} not supported")
+                    + ", supported extensions are (.yml|.csv|.txt)"
+                )
+            )
 
 
     def _write_text_file(self):
@@ -638,18 +629,16 @@ class Writer():
         writer for .yml files
         """
 
-        pop_keys = []
-        for key in self.file_dict:
-            if self.file_dict[key] == "":
-                pop_keys.append(key)
+        pop_keys = [key for key in self.file_dict if self.file_dict[key] == ""]
         for key in pop_keys:
             self.file_dict.pop(key)
-        pop_dataset = []
+        pop_dataset = [
+            ids
+            for ids, dataset in enumerate(self.file_dict['Datasets'])
+            if ("constant" in dataset['DataType'] and self.ignore_constant)
+        ]
 
-        for ids, dataset in enumerate(self.file_dict['Datasets']):
-            if ("constant" in dataset['DataType'] and
-                    self.ignore_constant):
-                pop_dataset.append(ids)
+
         for pop_id in pop_dataset:
             self.file_dict['Datasets'].pop(pop_id)
             # if isinstance(dataset['data'], np.ndarray):
@@ -698,10 +687,7 @@ class Writer():
                           'pressure',
                           'deposition_temperature',
                           'direction']
-            if USE_RUAMEL:
-                yaml_spec = CommentedMap()
-            else:
-                yaml_spec = {}
+            yaml_spec = CommentedMap() if USE_RUAMEL else {}
             for spec_key in spec_order:
                 for key, val in specs.items():
                     if spec_key == key:

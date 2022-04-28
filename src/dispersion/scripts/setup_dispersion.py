@@ -51,8 +51,7 @@ def ask_and_confirm(question, default, validator, data_name, confirm=True):
         name of the data that is being input
     """
     user_input = ask(question, default, validator)
-    confirmation_question = ("confirm {} as ".format(data_name) +
-                             "{}? [y/n]> ".format(user_input))
+    confirmation_question = (f"confirm {data_name} as " + f"{user_input}? [y/n]> ")
     return [user_input, get_confirmation(confirmation_question)]
 
 
@@ -118,7 +117,7 @@ def install_modules(conf):
         if module == "UserData":
             install = True
         else:
-            question = "install module {}? [y/n]> ".format(module)
+            question = f"install module {module}? [y/n]> "
             install = get_confirmation(question)
 
         conf['Modules'][module] = install
@@ -186,8 +185,7 @@ def install_rii(module_dir, conf):
     question = ("download the refractive index info database from github?" +
                 " (required python package <GitPython>)" +
                 " [y/n]> ")
-    install = get_confirmation(question)
-    if install:
+    if install := get_confirmation(question):
         from git import Repo
         git_url = "https://github.com/polyanskiy/refractiveindex.info-database.git"
         #install_dir = os.path.join(conf['Path'], "RefractiveIndexInfo")
@@ -195,8 +193,7 @@ def install_rii(module_dir, conf):
 
 def maybe_rebuild_catalogue(conf):
     question = "rebuild catalogue? [y/n]> "
-    rebuild = get_confirmation(question)
-    if rebuild:
+    if rebuild := get_confirmation(question):
         cat = Catalogue(config=conf, rebuild= 'All')
         cat.save_to_file()
 

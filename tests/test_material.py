@@ -51,5 +51,4 @@ def test_from_model():
     assert np.isclose(np.real(n), 0.013366748652710245)
     assert np.isclose(np.imag(n), 3.2997524521729824)
 
-if __name__ == "__main__":
-    pass
+pass
